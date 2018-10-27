@@ -3,17 +3,24 @@ library(dplyr)
 library(readxl)
 library(shiny)
 library(DT)
-library(scatterD3)
 library(plotly)
 library(lubridate)
 
 #read in transactions from excel
 all_transactions<- read_excel("ExportedTransactions.xls")
 names(all_transactions)
+all_transactions$Description = str_replace_all(all_transactions$Description, "\\s+", " ")
+
 #read in dictionary from excel
 dict <- read_excel("dictionary.xls")
+dict$Description = str_replace_all(dict$Description, "\\s+", " ")
 #combine transaction table with dictionary table to apply labels
 all_trans_with_labels = left_join(all_transactions, dict, by="Description")
+
+blanks <- all_trans_with_labels[is.na(all_trans_with_labels$specific_catagory),]
+if(nrows(blanks) > 0) {
+  write_excel_csv(blanks,path = "blanks.csv")
+}
 #reformat posting date column
 all_trans_with_labels$`Posting Date` <- as.Date(all_trans_with_labels$`Posting Date` , "%m/%d/%y",  tz = "CST6CDT")
 all_trans_with_labels <- rename(all_trans_with_labels, 
