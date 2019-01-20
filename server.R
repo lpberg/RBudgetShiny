@@ -5,35 +5,20 @@ library(shiny)
 library(DT)
 library(plotly)
 library(lubridate)
-
+source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
 #read in transactions from excel
-all_transactions<- read_csv("transactions.csv")
-
-# all_transactions$Description = str_replace_all(all_transactions$Description, "\\s+", " ")
-
-#read in dictionary from excel
-# dict <- read_excel("dictionary.xls")
-# dict$Description = str_replace_all(dict$Description, "\\s+", " ")
-#combine transaction table with dictionary table to apply labels
-# all_transactions = left_join(all_transactions, dict, by="Description")
-# 
-# blanks <- all_transactions[is.na(all_transactions$specific_catagory),]
-# if(nrows(blanks) > 0) {
-#   write_excel_csv(blanks,path = "blanks.csv")
-# }
-summary(all_transactions)
-#reformat posting date column
-all_transactions$Date <- mdy(all_transactions$Date)
-all_transactions$`Account Name` <- as.character(all_transactions$`Account Name`)
-all_transactions <- rename(all_transactions, 
-                                `posting_date` = `Date`,
-                                `description` = `Description`,
-                                `orig_description` = `Original Description`,
-                                `amount` = `Amount`,
-                                `transaction_type` = `Transaction Type`,
-                                `acount_name` = `Account Name`,
-                                `transaction_cat` = `Category`)
-
+# all_transactions<- read_csv("transactions.csv")
+# all_transactions$Date <- mdy(all_transactions$Date)
+# all_transactions$`Account Name` <- as.character(all_transactions$`Account Name`)
+# all_transactions <- rename(all_transactions, 
+#                                 `posting_date` = `Date`,
+#                                 `description` = `Description`,
+#                                 `orig_description` = `Original Description`,
+#                                 `amount` = `Amount`,
+#                                 `transaction_type` = `Transaction Type`,
+#                                 `acount_name` = `Account Name`,
+#                                 `transaction_cat` = `Category`)
+all_transactions <- readInTransactions("transactions.csv")
 #set amounts to be inverse (not negative)
 # all_transactions$amount <- all_transactions$amount / -1
 
@@ -91,9 +76,19 @@ server <- function(input, output) {
   })
   
   output$plot2 <- renderPlotly({
-    df = aggregateByMonth()
-    p <- plot_ly(df, x = ~month, y = ~amount, type = 'bar', color = ~lab1) %>%
-      layout(yaxis = list(title = 'Count'), barmode = 'stack')
+    # OLD WAY
+    # df = aggregateByMonth()
+    # p <- plot_ly(df, x = ~month, y = ~amount, type = 'bar', color = ~lab1) %>%
+    #   layout(yaxis = list(title = 'Count'), barmode = 'group')
+    
+    # NEW WAY   
+    df = getTransactionsByMonthByDescription(all_df = all_transactions,
+                                             minDate = input$dateRange[1],
+                                             maxDate = input$dateRange[2],
+                                             descriptions = input$categories,
+                                             minAmount = input$valRange[1],
+                                             maxAmount = input$valRange[2])
+    p <- plotMonthlyTransactionSummaryByDescriptions(df)
     return(p)
   })
   

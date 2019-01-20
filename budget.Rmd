@@ -1,0 +1,58 @@
+---
+title: "Berg Monthly Spending"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE,warning=FALSE}
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(shiny)
+library(DT)
+library(plotly)
+library(lubridate)
+source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
+all_transactions <- readInTransactions("transactions.csv")
+```
+
+# Utilities
+```{r echo=FALSE, fig.width=12}
+df = getTransactionsByMonthByDescription(all_df = all_transactions,
+                                         minDate = mdy("06/01/2018"),
+                                         maxDate = mdy(format(Sys.time(), '%B %d, %Y')),
+                                         descriptions = c("Xcel Energy","City of Woodbury","Comcast"),
+                                         minAmount = 0,
+                                         maxAmount = 10000)
+p <- plotMonthlyTransactionSummaryByDescriptions(df)
+p
+```
+
+# Grocceries
+```{r echo=FALSE, fig.width=12}
+df = getTransactionsByMonthByDescription(all_df = all_transactions,
+                                         minDate = mdy("06/01/2018"),
+                                         maxDate = mdy("01/30/2019"),
+                                         # descriptions = c("Hy-Vee","Trader Joe's","Costco","Kowalski's"),
+                                          descriptions = c("Groceries"),
+                                         minAmount = 0,
+                                         maxAmount = 10000)
+p <- plotMonthlyTransactionSummaryByDescriptions(df)
+p
+```
+
+# Restaurants
+```{r echo=FALSE, fig.width=12}
+df = getTransactionsByMonthByDescription(all_df = all_transactions,
+                                         minDate = mdy("06/01/2018"),
+                                         maxDate = mdy("01/30/2019"),
+                                         descriptions = c("Restaurants"),
+                                         minAmount = 0,
+                                         maxAmount = 10000)
+p <- plotMonthlyTransactionSummaryByDescriptions(df)
+p
+```
