@@ -6,18 +6,7 @@ library(DT)
 library(plotly)
 library(lubridate)
 source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
-#read in transactions from excel
-# all_transactions<- read_csv("transactions.csv")
-# all_transactions$Date <- mdy(all_transactions$Date)
-# all_transactions$`Account Name` <- as.character(all_transactions$`Account Name`)
-# all_transactions <- rename(all_transactions, 
-#                                 `posting_date` = `Date`,
-#                                 `description` = `Description`,
-#                                 `orig_description` = `Original Description`,
-#                                 `amount` = `Amount`,
-#                                 `transaction_type` = `Transaction Type`,
-#                                 `acount_name` = `Account Name`,
-#                                 `transaction_cat` = `Category`)
+#read in transactions from csv
 all_transactions <- readInTransactions("transactions.csv")
 #set amounts to be inverse (not negative)
 # all_transactions$amount <- all_transactions$amount / -1
@@ -83,12 +72,6 @@ server <- function(input, output) {
   })
   
   output$plot2 <- renderPlotly({
-    # OLD WAY
-    # df = aggregateByMonth()
-    # p <- plot_ly(df, x = ~month, y = ~amount, type = 'bar', color = ~lab1) %>%
-    #   layout(yaxis = list(title = 'Count'), barmode = 'group')
-    
-    # NEW WAY   
     df = getTransactionsByMonthByDescription(all_df = all_transactions,
                                              minDate = input$dateRange[1],
                                              maxDate = input$dateRange[2],

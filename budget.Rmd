@@ -18,6 +18,15 @@ library(plotly)
 library(lubridate)
 source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
 all_transactions <- readInTransactions("transactions.csv")
+
+SLFCU_CHECK_trans <- all_transactions %>% filter(account_name %in% c("S/D - Money Manager"))
+SLFCU_SAV_trans <- all_transactions %>% filter(account_name %in% c("Regular Share"))
+WF_VISA_trans <- all_transactions %>% filter(account_name %in% c("WELLS FARGO CASH BACK VISA SIGNATURE CARD"))
+WF_SAV_trans <- all_transactions %>% filter(account_name %in% c("WAY2SAVE® SAVINGS"))
+WF_CHECK_trans <- all_transactions %>% filter(account_name %in% c("CUSTOM MANAGEMENT(RM)"))
+NOV_CHECK_trans <- all_transactions %>% filter(account_name %in% c("INCENTIVE CHECKING"))
+NOV_MORT_trans <- all_transactions %>% filter(account_name %in% c("30 Year Mortgage"))
+CARPAY_trans <- all_transactions %>% filter(account_name %in% c("SUBARU ACCOUNT"))
 ```
 
 # Utilities
