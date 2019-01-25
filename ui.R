@@ -5,6 +5,7 @@ ui <- fluidPage(
   titlePanel("budget"),
   sidebarLayout(
     sidebarPanel(width=4,
+                 uiOutput("accounts"),
                  uiOutput("valRange"),
                  uiOutput("categories"),
                  uiOutput("dateRange")

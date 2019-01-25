@@ -32,7 +32,7 @@ readInTransactions <- function(fileName){
                                `orig_description` = `Original Description`,
                                `amount` = `Amount`,
                                `transaction_type` = `Transaction Type`,
-                               `acount_name` = `Account Name`,
+                               `account_name` = `Account Name`,
                                `transaction_cat` = `Category`)
     return(all_transactions)
 }

@@ -25,6 +25,12 @@ all_transactions <- readInTransactions("transactions.csv")
 summary(all_transactions)
 
 server <- function(input, output) {
+  #UI element for selecting categories
+  output$accounts = renderUI({
+    selectInput("accounts", "Accounts:", 
+                unique(all_transactions$account_name),
+                multiple = TRUE, selected = c('S/D - Money Manager'))
+  })
   #UI element for setting the amount range to display
   output$valRange = renderUI({
     sliderInput("valRange", "Amount Range", 
@@ -36,7 +42,7 @@ server <- function(input, output) {
   })
   #UI element for selecting categories
   output$categories = renderUI({
-    selectInput("categories", "Select Categories:", 
+    selectInput("categories", "Categories:", 
                 unique(c(c(all_transactions$description),c(all_transactions$transaction_cat))),
                 multiple = TRUE, selected = c('Target'))
   })
@@ -58,8 +64,9 @@ server <- function(input, output) {
   })
   getFilteredData <- reactive({
     filtered_df = all_transactions %>%
-       select(c(`amount`,`description`,`transaction_cat`,`posting_date`)) %>%
+       select(c(`amount`,`description`,`transaction_cat`,`posting_date`,`account_name`)) %>%
       filter(`posting_date` >= input$dateRange[1] & `posting_date` <= input$dateRange[2]) %>%
+      filter(`account_name` %in%  input$accounts) %>%
       filter(`amount` >= input$valRange[1] & `amount` <= input$valRange[2])
     #only show labels from input$labels (show all is default) 
     if (length(input$categories) != 0){
