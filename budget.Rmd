@@ -17,21 +17,32 @@ library(DT)
 library(plotly)
 library(lubridate)
 source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
+
+#read in all transactions from mint
 all_transactions <- readInTransactions("transactions.csv")
 
-SLFCU_CHECK_trans <- all_transactions %>% filter(account_name %in% c("S/D - Money Manager"))
-SLFCU_SAV_trans <- all_transactions %>% filter(account_name %in% c("Regular Share"))
-WF_VISA_trans <- all_transactions %>% filter(account_name %in% c("WELLS FARGO CASH BACK VISA SIGNATURE CARD"))
-WF_SAV_trans <- all_transactions %>% filter(account_name %in% c("WAY2SAVE® SAVINGS"))
-WF_CHECK_trans <- all_transactions %>% filter(account_name %in% c("CUSTOM MANAGEMENT(RM)"))
-NOV_CHECK_trans <- all_transactions %>% filter(account_name %in% c("INCENTIVE CHECKING"))
-NOV_MORT_trans <- all_transactions %>% filter(account_name %in% c("30 Year Mortgage"))
-CARPAY_trans <- all_transactions %>% filter(account_name %in% c("SUBARU ACCOUNT"))
+desc_cat_uniq <- unique(all_transactions$transaction_cat)
+
+getAllUniqueDebitTrans <- function(acct){
+    df <- all_transactions %>% 
+        filter(account_name %in% c(acct),transaction_type %in% c("debit")) %>% 
+        distinct(posting_date,description,transaction_cat, .keep_all = TRUE)
+    return(df)
+}
+#create sub dataframes by account name
+SLFCU_CHECK_trans <- getAllUniqueDebitTrans("S/D - Money Manager")
+SLFCU_SAV_trans <- getAllUniqueDebitTrans("Regular Share")
+WF_VISA_trans <- getAllUniqueDebitTrans("WELLS FARGO CASH BACK VISA SIGNATURE CARD")
+WF_SAV_trans <- getAllUniqueDebitTrans("WAY2SAVE® SAVINGS")
+WF_CHECK_trans <- getAllUniqueDebitTrans("CUSTOM MANAGEMENT(RM)")
+NOV_CHECK_trans <- getAllUniqueDebitTrans("INCENTIVE CHECKING")
+NOV_MORT_trans <- getAllUniqueDebitTrans("30 Year Mortgage")
+CARPAY_trans <- getAllUniqueDebitTrans("SUBARU ACCOUNT")
 ```
 
 # Utilities
 ```{r echo=FALSE, fig.width=12}
-df = getTransactionsByMonthByDescription(all_df = all_transactions,
+df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans,
                                          minDate = mdy("06/01/2018"),
                                          maxDate = mdy(format(Sys.time(), '%B %d, %Y')),
                                          descriptions = c("Xcel Energy","City of Woodbury","Comcast"),
@@ -43,25 +54,37 @@ p
 
 # Grocceries
 ```{r echo=FALSE, fig.width=12}
-df = getTransactionsByMonthByDescription(all_df = all_transactions,
+df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans,
                                          minDate = mdy("06/01/2018"),
                                          maxDate = mdy("01/30/2019"),
                                          # descriptions = c("Hy-Vee","Trader Joe's","Costco","Kowalski's"),
                                           descriptions = c("Groceries"),
                                          minAmount = 0,
-                                         maxAmount = 10000)
+                                         maxAmount = 10000) %>% arrange(desc(amount))
 p <- plotMonthlyTransactionSummaryByDescriptions(df)
 p
 ```
 
 # Restaurants
 ```{r echo=FALSE, fig.width=12}
-df = getTransactionsByMonthByDescription(all_df = all_transactions,
+df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans,
                                          minDate = mdy("06/01/2018"),
                                          maxDate = mdy("01/30/2019"),
                                          descriptions = c("Restaurants"),
                                          minAmount = 0,
-                                         maxAmount = 10000)
+                                         maxAmount = 10000) %>% arrange(desc(amount))
+p <- plotMonthlyTransactionSummaryByDescriptions(df)
+p
+```
+
+# Entertainment
+```{r echo=FALSE, fig.width=12}
+df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans,
+                                         minDate = mdy("06/01/2018"),
+                                         maxDate = mdy("01/30/2019"),
+                                         descriptions = c("Entertainment"),
+                                         minAmount = 0,
+                                         maxAmount = 10000) %>% arrange(desc(amount))
 p <- plotMonthlyTransactionSummaryByDescriptions(df)
 p
 ```
