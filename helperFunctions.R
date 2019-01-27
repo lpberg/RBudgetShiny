@@ -22,6 +22,13 @@ plotMonthlyTransactionSummaryByDescriptions <- function(df){
     return(p)
 }
 
+plotMonthlyTransactionSummaryByDescriptionsStacked <- function(df){
+    df$text_label <- round(df$amount, digits = 0)
+    p <- plot_ly(df, x = ~month, y = ~amount, type = 'bar', color = ~lab1, text = ~text_label, textposition = 'auto') %>%
+        layout(yaxis = list(title = 'Count'), barmode = 'stack')
+    return(p)
+}
+
 readInTransactions <- function(fileName){
     all_transactions <- read_csv(fileName)
     all_transactions$Date <- mdy(all_transactions$Date)

@@ -1,7 +1,10 @@
 ---
 title: "Berg Monthly Spending"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
-output: html_document
+output: 
+    html_document:
+        toc: true
+        toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -40,40 +43,72 @@ NOV_MORT_trans <- getAllUniqueDebitTrans("30 Year Mortgage")
 CARPAY_trans <- getAllUniqueDebitTrans("SUBARU ACCOUNT")
 ```
 
-# Utilities
+# Monthly Bills
 ```{r echo=FALSE, fig.width=12}
 df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans,
                                          minDate = mdy("06/01/2018"),
                                          maxDate = mdy(format(Sys.time(), '%B %d, %Y')),
-                                         descriptions = c("Xcel Energy","City of Woodbury","Comcast"),
+                                         descriptions = c("Xcel Energy","City of Woodbury","Comcast","Tennis Sanitation","Subaru Car Payment","Mortgage Transfer to Novation"),
                                          minAmount = 0,
                                          maxAmount = 10000)
-p <- plotMonthlyTransactionSummaryByDescriptions(df)
+p <- plotMonthlyTransactionSummaryByDescriptionsStacked(df)
 p
 ```
 
-# Grocceries
+# Groceries
+
+## Main Stores
 ```{r echo=FALSE, fig.width=12}
 df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans,
                                          minDate = mdy("06/01/2018"),
                                          maxDate = mdy("01/30/2019"),
                                          # descriptions = c("Hy-Vee","Trader Joe's","Costco","Kowalski's"),
-                                          descriptions = c("Groceries"),
+                                          descriptions = c("Hy-Vee","Trader Joe's","Costco"),
                                          minAmount = 0,
                                          maxAmount = 10000) %>% arrange(desc(amount))
-p <- plotMonthlyTransactionSummaryByDescriptions(df)
+p <- plotMonthlyTransactionSummaryByDescriptionsStacked(df)
+p
+```
+
+## Others
+
+```{r echo=FALSE, fig.width=12}
+SLFCU_CHECK_trans_filtered <- SLFCU_CHECK_trans %>% filter(!description %in%  c("Hy-Vee","Trader Joe's","Costco"))
+df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans_filtered,
+                                         minDate = mdy("06/01/2018"),
+                                         maxDate = mdy("01/30/2019"),
+                                         descriptions = c("Groceries"),
+                                         minAmount = 0,
+                                         maxAmount = 10000)
+p <- plotMonthlyTransactionSummaryByDescriptionsStacked(df)
 p
 ```
 
 # Restaurants
+
+## Main Ones
 ```{r echo=FALSE, fig.width=12}
 df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans,
+                                         minDate = mdy("06/01/2018"),
+                                         maxDate = mdy("01/30/2019"),
+                                         descriptions = c("Domino's Pizza","KFC","Roccos Pizza","Subway","Super 99 Buffet","Taco Bell","Chick-Fil-A"),
+                                         minAmount = 0,
+                                         maxAmount = 10000) %>% arrange(desc(amount))
+p <- plotMonthlyTransactionSummaryByDescriptionsStacked(df)
+p
+```
+
+## Others
+
+```{r echo=FALSE, fig.width=12}
+SLFCU_CHECK_trans_filtered <- SLFCU_CHECK_trans %>% filter(!description %in%  c("Domino's Pizza","KFC","Roccos Pizza","Subway","Super 99 Buffet","Taco Bell","Chick-Fil-A"))
+df = getTransactionsByMonthByDescription(all_df = SLFCU_CHECK_trans_filtered,
                                          minDate = mdy("06/01/2018"),
                                          maxDate = mdy("01/30/2019"),
                                          descriptions = c("Restaurants"),
                                          minAmount = 0,
                                          maxAmount = 10000) %>% arrange(desc(amount))
-p <- plotMonthlyTransactionSummaryByDescriptions(df)
+p <- plotMonthlyTransactionSummaryByDescriptionsStacked(df)
 p
 ```
 
