@@ -6,110 +6,175 @@ library(DT)
 library(plotly)
 library(lubridate)
 library(shinydashboard)
+
 source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
 
 #read in transactions from csv
 all_transactions <- readInTransactions("transactions.csv")
 
-server <- function(input, output) {
-    
-  #UI element for selecting categories
-  output$accounts = renderUI({
-    selectInput("accounts", "Accounts:", 
-                unique(all_transactions$account_name),
-                multiple = FALSE, 
-                selected = c("Fidelity Rewards Visa Signature"))
+
+server <- function(session,input, output) {
+  #------------------------Update Categories Buttons------------------------
+  observeEvent(input$groc_only, {
+    updateSelectInput(session, "categories",selected = c('Hy-Vee',"Trader Joe's","Costco"))
   })
   
-  #UI element for setting the amount range to display
-  output$valRange = renderUI({
-    sliderInput("valRange", 
-                "Amount Range", 
-                min = 0, 
-                max = 2000, 
-                value=c(1,2000), 
-                step = NULL, 
-                round = TRUE)
+  observeEvent(input$stream_only, {
+    updateSelectInput(session, "categories",selected = c('Netflix',"Hulu","AUTH : GOOGLE*GOOGLE MUSIC"))
   })
   
-  #UI element for selecting categories
-  output$categories = renderUI({
-    selectInput("categories", "Categories:", 
-                unique(c(c(all_transactions$description),c(all_transactions$transaction_cat))),
-                multiple = TRUE, selected = c('Target'))
+  observeEvent(input$util_only, {
+    updateSelectInput(session, "categories",selected = c('Tennis Sanitation LLC',"Comcast","City of Woodbury"))
   })
   
-  #UI element for setting date range of transactions
-  output$dateRange = renderUI({
-    dateRangeInput('dateRange',
-         label = 'Date range', 
-         format = 'MM-yy',startview = "week",
-         start = min(all_transactions$posting_date), 
-         end = max(all_transactions$posting_date))
+  #------------------------Reactive Data Sources------------------------
+  
+  allDebitTransactions <- reactive({
+    df = all_transactions %>% filter(transaction_type == 'debit')
+  })
+  
+  allCreditTransactions <- reactive({
+    df = all_transactions %>% filter(transaction_type == 'credit')
   })
   
   aggregateByMonth <- reactive({
-    df = getFilteredData() %>% group_by(lab1 = `description`, 
-        month = paste(
-          months(floor_date(`posting_date`,"month")),
-           year(floor_date(`posting_date`,"month")))) %>%
-      summarize(amount = sum(`amount`))
+    df = getFilteredData() %>% 
+      group_by(
+        label = `description`, 
+        month = paste(months(floor_date(`posting_date`,"month")), 
+                      year(floor_date(`posting_date`,"month")))
+      ) %>%
+      summarize(amount = sum(`amount`)
+      )
     return(df)
   })
   
   getFilteredData <- reactive({
-    filtered_df = all_transactions %>%
-       select(c(`amount`,`description`,`transaction_cat`,`posting_date`,`account_name`)) %>%
-      filter(`posting_date` >= input$dateRange[1] & `posting_date` <= input$dateRange[2]) %>%
+    filtered_df = allDebitTransactions() %>%
+      filter(`posting_date` >= input$dateRange[1]) %>% 
+      filter(`posting_date` <= input$dateRange[2]) %>%
       filter(`account_name` %in%  input$accounts) %>%
-      filter(`amount` >= input$valRange[1] & `amount` <= input$valRange[2])
-    #only show labels from input$labels (show all is default) 
-    if (length(input$categories) != 0){
-      filtered_df = filtered_df %>%
-        filter(`description` %in% input$categories | `transaction_cat` %in% input$categories)
-    }
+      filter(`amount` >= input$valRange[1]) %>% 
+      filter(`amount` <= input$valRange[2]) %>% 
+      filter(`description` %in% input$categories)
     return(filtered_df)
   })
+    
+  #------------------------Sidebar Filters------------------------
   
-  output$plot1 <- renderPlotly({
-    df = getFilteredData()
-    p <- plot_ly(data = df, 
-                 type = 'scatter', 
-                 size =  ~`amount`,
-                 x = ~`posting_date`, 
-                 y = ~`amount`, 
-                 color = ~`transaction_cat`)
+  output$accounts = renderUI({
+    selectInput(
+      "accounts", 
+      "Accounts:", 
+      unique(allDebitTransactions()$account_name),
+      multiple = FALSE, 
+      selected = c("Fidelity Rewards Visa Signature")
+    )
+  })
+  
+  output$valRange = renderUI({
+    sliderInput(
+      "valRange", 
+      "Amount Range", 
+      min = 0, 
+      max = 5000, 
+      value=c(1,5000), 
+      step = NULL, 
+      round = TRUE
+    )
+  })
+  
+  output$categories = renderUI({
+    selectInput(
+      "categories", 
+      "Categories:", 
+      unique(c(allDebitTransactions()$description)),
+      multiple = TRUE, 
+      selected = c('Hy-Vee')
+    )
+  })
+  
+  output$dateRange = renderUI({
+    dateRangeInput('dateRange',
+      label = 'Date range', 
+      format = 'MM-yy',startview = "month",
+      start = min(allDebitTransactions()$posting_date), 
+      end = max(allDebitTransactions()$posting_date)
+    )
+  })
+  
+  #------------------------Transaction tab content------------------------
+  
+  output$transaction_scatter <- renderPlotly({
+    p <- plot_ly(
+      getFilteredData(), 
+       type = 'bar', 
+       x = ~`posting_date`, 
+       y = ~`amount`, 
+       color = ~`transaction_cat`
+    ) %>% 
+      layout(yaxis = list(title = 'Amount ($)'), 
+             xaxis = list(title = 'Date')
+       )
     return(p)
   })
   
-  output$plot2 <- renderPlotly({
-    df = getTransactionsByMonthByDescription(all_df = all_transactions,
-                                             minDate = input$dateRange[1],
-                                             maxDate = input$dateRange[2],
-                                             descriptions = input$categories,
-                                             minAmount = input$valRange[1],
-                                             maxAmount = input$valRange[2])
-    p <- plotMonthlyTransactionSummaryByDescriptions(df)
-    return(p)
+  output$transaction_list <- DT::renderDataTable({
+    DT::datatable(
+      getFilteredData() %>% select("Date" = posting_date,
+               "Label" = description,
+               "Amount ($)" = amount),
+      rownames = FALSE,
+      options = list(pageLength = 50)
+    )
   })
+   
+
+   
+  #------------------------Monthly Summary tab content------------------------
   
-   output$transaction_list <- DT::renderDataTable({
-      # validate(
-      #  need(!is.null(getFilteredData()))
-      # )
-      df <- getFilteredData()
-      DT::datatable(df,
-                    rownames = FALSE,
-                    options = list(pageLength = 50))
+   output$monthly_summary <- renderPlotly({
+        p <- plot_ly(
+          aggregateByMonth(), 
+          x = ~month, 
+          y = ~amount, 
+          type = 'bar', 
+          color = ~label, 
+          textposition = 'auto') %>%
+          layout(yaxis = list(title = 'Amount ($)'), 
+                 xaxis = list(title = 'Month'),
+                 barmode = 'stack')
+        return(p)
    })
-   
-   output$monthly_summary_list <- DT::renderDataTable({
-     DT::datatable(aggregateByMonth(),
-                                       rownames = FALSE,
-                                       options = list(pageLength = 50))   })
-   
+  
+  output$monthly_summary_list <- DT::renderDataTable({
+    DT::datatable(
+      aggregateByMonth() %>% select('Label' = label,"Month" = month, "Amount ($)" = amount),
+      rownames = FALSE,
+      options = list(pageLength = 50)
+    )   
+  })
+  #------------------------Credit tab content------------------------
+  
+  output$credit_transaction_scatter <- renderPlotly({
+    p <- plot_ly(
+      allCreditTransactions(), 
+      type = 'bar', 
+      x = ~`posting_date`, 
+      y = ~`amount`, 
+      color = ~`transaction_cat`
+    )
+    return(p)
+  })
+  
+  output$credit_transaction_list <- DT::renderDataTable({
+    df <- allCreditTransactions()
+    DT::datatable(
+      df %>% select("Date" = posting_date,
+                    "Label" = description,
+                    "Amount ($)" = amount),
+      rownames = FALSE,
+      options = list(pageLength = 50)
+    )
+  })
 }
-
-# Run the application 
-#shinyApp(ui = ui, server = server)
-
