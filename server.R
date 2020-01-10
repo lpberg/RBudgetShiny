@@ -16,7 +16,12 @@ all_transactions <- readInTransactions("transactions.csv")
 server <- function(session,input, output) {
   #------------------------Update Categories Buttons------------------------
   observeEvent(input$groc_only, {
-    updateSelectInput(session, "categories",selected = c('Hy-Vee',"Trader Joe's","Costco"))
+    df <- allDebitTransactions() %>% filter(transaction_cat == "Groceries")
+    updateSelectInput(session, "categories",selected = unique(df$description))
+  })
+  
+  observeEvent(input$amaz_only, {
+    updateSelectInput(session, "categories",selected = c('Amazon'))
   })
   
   observeEvent(input$stream_only, {
@@ -24,7 +29,20 @@ server <- function(session,input, output) {
   })
   
   observeEvent(input$util_only, {
-    updateSelectInput(session, "categories",selected = c('Tennis Sanitation LLC',"Comcast","City of Woodbury"))
+    # updateSelectInput(session, "categories",selected = c('Tennis Sanitation LLC',"Comcast","City of Woodbury"))
+    df <- allDebitTransactions() %>% filter(transaction_cat %in%  c("Utilities","Internet"))
+    updateSelectInput(session, "categories",selected = unique(df$description))
+  })
+  
+  observeEvent(input$rest_only, {
+    df <- allDebitTransactions() %>% filter(transaction_cat == "Restaurants")
+    updateSelectInput(session, "categories",selected = unique(df$description))
+  })
+  
+  observeEvent(input$cafe_only, {
+    # updateSelectInput(session, "categories",selected = c("Caribou Mobile App","Starbucks","Dazbog Coffee","Dunn Bros App"))
+    df <- allDebitTransactions() %>% filter(transaction_cat == "Coffee Shops")
+    updateSelectInput(session, "categories",selected = unique(df$description))
   })
   
   #------------------------Reactive Data Sources------------------------
@@ -41,8 +59,7 @@ server <- function(session,input, output) {
     df = getFilteredData() %>% 
       group_by(
         label = `description`, 
-        month = paste(months(floor_date(`posting_date`,"month")), 
-                      year(floor_date(`posting_date`,"month")))
+        month = paste0(floor_date(`posting_date`,"month"))
       ) %>%
       summarize(amount = sum(`amount`)
       )
@@ -111,7 +128,7 @@ server <- function(session,input, output) {
        type = 'bar', 
        x = ~`posting_date`, 
        y = ~`amount`, 
-       color = ~`transaction_cat`
+       color = ~`description`
     ) %>% 
       layout(yaxis = list(title = 'Amount ($)'), 
              xaxis = list(title = 'Date')
@@ -139,10 +156,15 @@ server <- function(session,input, output) {
           x = ~month, 
           y = ~amount, 
           type = 'bar', 
+          text = ~amount,
+          textfont = list(color = '#000000', size = 16),
           color = ~label, 
           textposition = 'auto') %>%
           layout(yaxis = list(title = 'Amount ($)'), 
-                 xaxis = list(title = 'Month'),
+                 xaxis = list(title = 'Month',
+                                type = 'date',
+                                tickformat = "%b %y"
+                              ),
                  barmode = 'stack')
         return(p)
    })

@@ -22,31 +22,34 @@ ui <- dashboardPage(
                     actionButton("groc_only", "Groceries"),
                     actionButton("util_only", "Utilities"),
                     actionButton("stream_only", "Streaming Services"),
+                    actionButton("amaz_only", "Amazon"),
+                    actionButton("rest_only", "Restarunts"),
+                    actionButton("cafe_only", "Coffee"),
                     
                 )
             )
         ),
-        
-        tabsetPanel(
-            type="tabs",
-            tabPanel(
-                "Debit: Monthly Summary",
-                column(width=9,
-                       plotlyOutput("monthly_summary")
-                 ),
-                column(width=3,
-                       DTOutput("monthly_summary_list")
+        fluidRow(
+            box(width = 12,
+                tabsetPanel(
+                    type="tabs",
+                    tabPanel(
+                        "Debit: Monthly Summary",
+                        plotlyOutput("monthly_summary"),
+                        DTOutput("monthly_summary_list")
+                    ),
+                    tabPanel(
+                        "Debit: Transactions",
+                        plotlyOutput("transaction_scatter"),
+                        DTOutput("transaction_list")
+                    ),
+                    tabPanel(
+                        "Credit: Transactions",
+                        plotlyOutput("credit_transaction_scatter"),
+                        DTOutput("credit_transaction_list")
+                    )
                 )
-            ),
-            tabPanel(
-                "Debit: Transactions",
-                plotlyOutput("transaction_scatter"),
-                DTOutput("transaction_list")
-            ),
-            tabPanel(
-                "Credit: Transactions",
-                plotlyOutput("credit_transaction_scatter"),
-                DTOutput("credit_transaction_list")
+                
             )
         )
     )
