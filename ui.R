@@ -13,19 +13,17 @@ ui <- dashboardPage(
             box(width = 12,
                 column(width = 4,
                     uiOutput("accounts"),
-                    uiOutput("valRange")
-                ),
-                column(width = 4,
-                    uiOutput("categories"),
+                    uiOutput("valRange"),
                     uiOutput("dateRange")
                 ),
                 column(width = 4,
-                    actionButton("groc_only", "Groceries"),
+                    uiOutput("category"),
+                    actionButton("groc_only", "Groceries (top 3)"),
                     actionButton("util_only", "Utilities"),
-                    actionButton("stream_only", "Streaming Services"),
-                    actionButton("amaz_only", "Amazon"),
-                    actionButton("rest_only", "Restarunts"),
-                    actionButton("cafe_only", "Coffee"),
+                    actionButton("amaz_only", "Amazon")
+                ),
+                column(width = 4,
+                    uiOutput("places")
                 )
             )
         ),

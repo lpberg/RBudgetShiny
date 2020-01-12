@@ -15,33 +15,23 @@ all_transactions <- readInTransactions("transactions.csv")
 timeline_items <- readxl::read_excel('timeline.xlsx',sheet = 'cal')
 
 server <- function(session,input, output) {
-  #------------------------Update Categories Buttons------------------------
+  #------------------------Update places Buttons------------------------
+  observeEvent(input$category, {
+    df <- allDebitTransactions() %>% filter(transaction_cat == input$category)
+    updateSelectInput(session, "places",selected = unique(df$description))
+  })
+  
   observeEvent(input$groc_only, {
-    df <- allDebitTransactions() %>% filter(transaction_cat == "Groceries")
-    updateSelectInput(session, "categories",selected = unique(df$description))
+    updateSelectInput(session, "places",selected = c("Hy-Vee","Costco","Trader Joe's"))
   })
   
   observeEvent(input$amaz_only, {
-    updateSelectInput(session, "categories",selected = c('Amazon'))
-  })
-  
-  observeEvent(input$stream_only, {
-    updateSelectInput(session, "categories",selected = c('Netflix',"Hulu","AUTH : GOOGLE*GOOGLE MUSIC"))
+    updateSelectInput(session, "places",selected = c('Amazon'))
   })
   
   observeEvent(input$util_only, {
     df <- allDebitTransactions() %>% filter(transaction_cat %in%  c("Utilities","Internet"))
-    updateSelectInput(session, "categories",selected = unique(df$description))
-  })
-  
-  observeEvent(input$rest_only, {
-    df <- allDebitTransactions() %>% filter(transaction_cat == "Restaurants")
-    updateSelectInput(session, "categories",selected = unique(df$description))
-  })
-  
-  observeEvent(input$cafe_only, {
-    df <- allDebitTransactions() %>% filter(transaction_cat == "Coffee Shops")
-    updateSelectInput(session, "categories",selected = unique(df$description))
+    updateSelectInput(session, "places",selected = unique(df$description))
   })
   
   #------------------------Reactive Data Sources------------------------
@@ -57,7 +47,7 @@ server <- function(session,input, output) {
   aggregateByMonth <- reactive({
     df = getFilteredData() %>% 
       group_by(
-        label = `description`, 
+        desc = `description`, 
         month = paste0(floor_date(`posting_date`,"month"))
       ) %>%
       summarize(amount = sum(`amount`)
@@ -72,7 +62,7 @@ server <- function(session,input, output) {
       filter(`account_name` %in%  input$accounts) %>%
       filter(`amount` >= input$valRange[1]) %>% 
       filter(`amount` <= input$valRange[2]) %>% 
-      filter(`description` %in% input$categories)
+      filter(`description` %in% input$places)
     return(filtered_df)
   })
     
@@ -83,6 +73,16 @@ server <- function(session,input, output) {
       "accounts", 
       "Accounts:", 
       unique(allDebitTransactions()$account_name),
+      multiple = FALSE, 
+      selected = c("Fidelity Rewards Visa Signature")
+    )
+  })
+  
+  output$category = renderUI({
+    selectInput(
+      "category", 
+      "Category:", 
+      choices = unique(allDebitTransactions()$transaction_cat),
       multiple = FALSE, 
       selected = c("Fidelity Rewards Visa Signature")
     )
@@ -100,10 +100,10 @@ server <- function(session,input, output) {
     )
   })
   
-  output$categories = renderUI({
+  output$places = renderUI({
     selectInput(
-      "categories", 
-      "Categories:", 
+      "places", 
+      "Places:", 
       unique(c(allDebitTransactions()$description)),
       multiple = TRUE, 
       selected = c('Hy-Vee')
@@ -149,28 +149,51 @@ server <- function(session,input, output) {
    
   #------------------------Monthly Summary tab content------------------------
   
-   output$monthly_summary <- renderPlotly({
-        p <- plot_ly(
-          aggregateByMonth(), 
-          x = ~month, 
-          y = ~amount, 
-          type = 'bar', 
-          text = ~amount,
-          textfont = list(color = '#000000', size = 16),
-          color = ~label, 
-          textposition = 'auto') %>%
-          layout(yaxis = list(title = 'Amount ($)'), 
-                 xaxis = list(title = 'Month',
-                                type = 'date',
-                                tickformat = "%b %y"
-                              ),
-                 barmode = 'stack')
-        return(p)
-   })
+   # output$monthly_summary <- renderPlotly({
+   #      p <- plot_ly(
+   #        aggregateByMonth(),
+   #        x = ~month,
+   #        y = ~amount,
+   #        type = 'bar',
+   #        color = ~desc,
+   #        text = ~amount,
+   #        textfont = list(color = '#000000', size = 16),
+   #        hovertemplate = paste('<b>Cost</b>: $%{y}<br><b>Place</b>:',~color,'<br>'),
+   #        textposition = 'auto') %>%
+   #        layout(yaxis = list(title = 'Amount ($)'),
+   #               xaxis = list(title = 'Month',
+   #                              type = 'date',
+   #                              tickformat = "%b %y"
+   #                            ),
+   #               barmode = 'stack')
+   #      return(p)
+   # })
+  
+  output$monthly_summary <- renderPlotly({
+    df = aggregateByMonth()
+    p <- plot_ly() %>%
+    add_trace(
+      x = df$month,
+      y = df$amount,
+      type = 'bar',
+      color = df$desc,
+      text = ~df$amount,
+      textfont = list(color = '#000000', size = 16),
+      textposition = 'auto',
+      hovertemplate = paste(df$desc,'($%{y})<br>%{x}')
+      ) %>%
+      layout(yaxis = list(title = 'Amount ($)'),
+             xaxis = list(title = 'Month',
+                          type = 'date',
+                          tickformat = "%b %y"
+             ),
+             barmode = 'stack')
+    return(p)
+  })
   
   output$monthly_summary_list <- DT::renderDataTable({
     DT::datatable(
-      aggregateByMonth() %>% select('Label' = label,"Month" = month, "Amount ($)" = amount),
+      aggregateByMonth() %>% select('Label' = desc,"Month" = month, "Amount ($)" = amount),
       rownames = FALSE,
       options = list(pageLength = 50)
     )   
