@@ -2,6 +2,7 @@ library(plotly)
 library(shiny)
 library(DT)
 library(shinydashboard)
+library(timevis)
 
 ui <- dashboardPage(
     title = "Budget Breakdown",
@@ -25,7 +26,6 @@ ui <- dashboardPage(
                     actionButton("amaz_only", "Amazon"),
                     actionButton("rest_only", "Restarunts"),
                     actionButton("cafe_only", "Coffee"),
-                    
                 )
             )
         ),
@@ -47,6 +47,13 @@ ui <- dashboardPage(
                         "Credit: Transactions",
                         plotlyOutput("credit_transaction_scatter"),
                         DTOutput("credit_transaction_list")
+                    ),
+                    tabPanel(
+                        "Timeline",
+                        tags$h4("Annual Timeline"),
+                        timevisOutput("timeline_year"),
+                        tags$h4("Monthly Timeline"),
+                        timevisOutput("timeline_month")
                     )
                 )
                 

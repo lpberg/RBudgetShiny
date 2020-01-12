@@ -6,12 +6,13 @@ library(DT)
 library(plotly)
 library(lubridate)
 library(shinydashboard)
+library(timevis)
 
 source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
 
 #read in transactions from csv
 all_transactions <- readInTransactions("transactions.csv")
-
+timeline_items <- readxl::read_excel('timeline.xlsx',sheet = 'cal')
 
 server <- function(session,input, output) {
   #------------------------Update Categories Buttons------------------------
@@ -29,7 +30,6 @@ server <- function(session,input, output) {
   })
   
   observeEvent(input$util_only, {
-    # updateSelectInput(session, "categories",selected = c('Tennis Sanitation LLC',"Comcast","City of Woodbury"))
     df <- allDebitTransactions() %>% filter(transaction_cat %in%  c("Utilities","Internet"))
     updateSelectInput(session, "categories",selected = unique(df$description))
   })
@@ -40,7 +40,6 @@ server <- function(session,input, output) {
   })
   
   observeEvent(input$cafe_only, {
-    # updateSelectInput(session, "categories",selected = c("Caribou Mobile App","Starbucks","Dazbog Coffee","Dunn Bros App"))
     df <- allDebitTransactions() %>% filter(transaction_cat == "Coffee Shops")
     updateSelectInput(session, "categories",selected = unique(df$description))
   })
@@ -199,4 +198,38 @@ server <- function(session,input, output) {
       options = list(pageLength = 50)
     )
   })
+  
+  #------------------------Timeline tab content------------------------
+  retList <- function(id,group,content,start){
+    return(list(id = id, group = group,content = content, start = start))
+  }
+  
+  output$timeline_year <- renderTimevis({
+    
+    timeline_annual_items <- timeline_items %>% filter(period == "year")
+    
+    tv <- timevis()
+    
+    for(i in 1:nrow(timeline_annual_items)){
+      item <- timeline_annual_items[i,]
+      tv <- tv %>% addItem(retList(item$id,item$group,paste0(item$content," (",item$amount,")"),item$date))
+    }
+    tv <- tv %>% setWindow(start = "2020-01-01", end="2020-12-30")
+    tv
+  })
+  
+  output$timeline_month <- renderTimevis({
+    
+    timeline_monthly_items <- timeline_items %>% filter(period == "month")
+    
+    tv <- timevis(groups = data.frame(id = c("bill","inv"),content = c("Bills","Investment"),style = c("color:red","color:green")))
+    
+    for(i in 1:nrow(timeline_monthly_items)){
+      item <- timeline_monthly_items[i,]
+      tv <- tv %>% addItem(retList(item$id,item$group,paste0(item$content," (",item$amount,")"),item$date))
+    }
+    tv <- tv %>% setWindow(start = "2020-01-01", end="2020-01-31")
+    tv
+  })
+
 }
