@@ -34,12 +34,26 @@ ui <- dashboardPage(
                     tabPanel(
                         "Debit: Monthly Summary",
                         plotlyOutput("monthly_summary"),
-                        DTOutput("monthly_summary_list")
+                        column(
+                            tags$h4("Monthly Summary"),
+                            width = 6,
+                            DTOutput("monthly_summary_list")
+                        ),
+                        column(
+                            tags$h4("Place Summary"),
+                            width = 6,
+                            DTOutput("monthly_summary_by_desc")
+                        )
                     ),
                     tabPanel(
                         "Debit: Transactions",
+                        tags$h4("Transactions Over Time"),
                         plotlyOutput("transaction_scatter"),
-                        DTOutput("transaction_list")
+                        column(
+                            width = 4,
+                            tags$h4("Individual Transactions"),
+                            DTOutput("transaction_list")
+                        )
                     ),
                     tabPanel(
                         "Credit: Transactions",

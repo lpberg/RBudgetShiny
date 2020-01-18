@@ -6,7 +6,9 @@ library(DT)
 library(plotly)
 library(lubridate)
 library(shinydashboard)
+library(shinyWidgets)
 library(timevis)
+library(RColorBrewer)
 
 source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
 
@@ -17,7 +19,7 @@ timeline_items <- readxl::read_excel('timeline.xlsx',sheet = 'cal')
 server <- function(session,input, output) {
   #------------------------Update places Buttons------------------------
   observeEvent(input$category, {
-    df <- allDebitTransactions() %>% filter(transaction_cat == input$category)
+    df <- allDebitTransactions() %>% filter(transaction_cat %in% input$category)
     updateSelectInput(session, "places",selected = unique(df$description))
   })
   
@@ -50,7 +52,7 @@ server <- function(session,input, output) {
         desc = `description`, 
         month = paste0(floor_date(`posting_date`,"month"))
       ) %>%
-      summarize(amount = sum(`amount`)
+      summarize(amount = sum(`amount`),n=n(),
       )
     return(df)
   })
@@ -79,12 +81,13 @@ server <- function(session,input, output) {
   })
   
   output$category = renderUI({
-    selectInput(
+    pickerInput(
       "category", 
       "Category:", 
       choices = unique(allDebitTransactions()$transaction_cat),
-      multiple = FALSE, 
-      selected = c("Fidelity Rewards Visa Signature")
+      multiple = TRUE, 
+      options = list(`actions-box` = TRUE),
+      selected = c("Groceries"),
     )
   })
   
@@ -105,8 +108,8 @@ server <- function(session,input, output) {
       "places", 
       "Places:", 
       unique(c(allDebitTransactions()$description)),
-      multiple = TRUE, 
-      selected = c('Hy-Vee')
+      multiple = TRUE
+      # selected = c('Hy-Vee')
     )
   })
   
@@ -119,57 +122,13 @@ server <- function(session,input, output) {
     )
   })
   
-  #------------------------Transaction tab content------------------------
-  
-  output$transaction_scatter <- renderPlotly({
-    p <- plot_ly(
-      getFilteredData(), 
-       type = 'bar', 
-       x = ~`posting_date`, 
-       y = ~`amount`, 
-       color = ~`description`
-    ) %>% 
-      layout(yaxis = list(title = 'Amount ($)'), 
-             xaxis = list(title = 'Date')
-       )
-    return(p)
-  })
-  
-  output$transaction_list <- DT::renderDataTable({
-    DT::datatable(
-      getFilteredData() %>% select("Date" = posting_date,
-               "Label" = description,
-               "Amount ($)" = amount),
-      rownames = FALSE,
-      options = list(pageLength = 50)
-    )
-  })
    
 
    
   #------------------------Monthly Summary tab content------------------------
   
-   # output$monthly_summary <- renderPlotly({
-   #      p <- plot_ly(
-   #        aggregateByMonth(),
-   #        x = ~month,
-   #        y = ~amount,
-   #        type = 'bar',
-   #        color = ~desc,
-   #        text = ~amount,
-   #        textfont = list(color = '#000000', size = 16),
-   #        hovertemplate = paste('<b>Cost</b>: $%{y}<br><b>Place</b>:',~color,'<br>'),
-   #        textposition = 'auto') %>%
-   #        layout(yaxis = list(title = 'Amount ($)'),
-   #               xaxis = list(title = 'Month',
-   #                              type = 'date',
-   #                              tickformat = "%b %y"
-   #                            ),
-   #               barmode = 'stack')
-   #      return(p)
-   # })
-  
   output$monthly_summary <- renderPlotly({
+    shiny::validate(need(nrow(aggregateByMonth()) != 0," "))
     df = aggregateByMonth()
     p <- plot_ly() %>%
     add_trace(
@@ -180,6 +139,7 @@ server <- function(session,input, output) {
       text = ~df$amount,
       textfont = list(color = '#000000', size = 16),
       textposition = 'auto',
+      colors = brewer.pal(length(names(table(df$desc))),"Paired"),
       hovertemplate = paste(df$desc,'($%{y})<br>%{x}')
       ) %>%
       layout(yaxis = list(title = 'Amount ($)'),
@@ -192,12 +152,77 @@ server <- function(session,input, output) {
   })
   
   output$monthly_summary_list <- DT::renderDataTable({
+    shiny::validate(need(!is.na(aggregateByMonth())," "))
     DT::datatable(
-      aggregateByMonth() %>% select('Label' = desc,"Month" = month, "Amount ($)" = amount),
+      aggregateByMonth() %>% 
+        mutate(month_label = paste0(month(month,abbr = T,label = T)," ",year(month))) %>% 
+        select("Month" = month_label, 
+               "Hidden Date" = month,
+               'Place' = desc,
+               "# of Transactions" = n,
+               "Total ($)" = amount),
       rownames = FALSE,
-      options = list(pageLength = 50)
+      options = list(pageLength = 50,
+                     dom = 't',
+                     order = list(list(1, 'desc')),
+                     columnDefs = list(list(visible=FALSE, targets=c(1)))
+                 )
     )   
   })
+  
+  output$monthly_summary_by_desc <- DT::renderDataTable({
+    shiny::validate(need(!is.na(aggregateByMonth())," "))
+    DT::datatable(
+      getFilteredData() %>% 
+        group_by(description) %>% summarize(total = sum(amount),n=n(),ave = round(sum(amount)/n()),digits=2) %>% 
+        select('Place' = description, 
+               "# of Transactions" = n,
+               "Ave. Transaction" = ave, 
+               "Total ($)" = total),
+      rownames = FALSE,
+      options = list(pageLength = 50,dom = 't')
+    )   
+  })
+  #------------------------Transaction tab content------------------------
+  
+  output$transaction_scatter <- renderPlotly({
+    df <- getFilteredData() 
+    p <- plot_ly(
+      df, 
+       # type = 'bar',
+       size = 15,
+       x = ~`posting_date`, 
+       y = ~`amount`, 
+       color = ~`description`,
+       colors = brewer.pal(length(names(table(df$description))),"Paired")
+    ) %>% 
+      layout(yaxis = list(title = 'Amount ($)'), 
+             xaxis = list(title = 'Date')
+       )
+    return(p)
+  })
+  
+  output$transaction_list <- DT::renderDataTable({
+    DT::datatable(
+      getFilteredData() %>% 
+        mutate(date_label = paste(
+                              month(posting_date,label = TRUE),
+                              wday(posting_date),
+                              year(posting_date),
+                              "(",wday(posting_date,label = TRUE),")"
+                              )) %>% 
+        select("Date" = date_label,
+               "Real Date" = posting_date,
+               "Label" = description,
+               "Amount ($)" = amount),
+      rownames = FALSE,
+      options = list(pageLength = 50,
+                     dom = 'ft',
+                     order = list(list(1, 'desc')),
+                     columnDefs = list(list(visible=FALSE, targets=c(1))))
+    )
+  })
+  
   #------------------------Credit tab content------------------------
   
   output$credit_transaction_scatter <- renderPlotly({
