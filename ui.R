@@ -35,8 +35,10 @@ ui <- dashboardPage(
                         "Debit: Monthly Summary",
                         plotlyOutput("monthly_summary"),
                         column(
-                            tags$h4("Monthly Summary"),
                             width = 6,
+                            tags$h4("Totals by Month"),
+                            DTOutput("monthly_summary_by_month"),
+                            tags$h4("Totals by Month, Place"),
                             DTOutput("monthly_summary_list")
                         ),
                         column(

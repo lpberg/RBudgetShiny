@@ -10,6 +10,9 @@ readInTransactions <- function(fileName){
       `transaction_type` = `Transaction Type`,
       `account_name` = `Account Name`,
       `transaction_cat` = `Category`)
+    all_transactions <- all_transactions %>% 
+      filter(account_name %in% c("JOINT WROS","Fidelity Rewards Visa Signature"))
+    
     all_transactions$month_year <- paste0(month(all_transactions$posting_date,abbr = T,label = T),
                                           " ",
                                           year(all_transactions$posting_date)

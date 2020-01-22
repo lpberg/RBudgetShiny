@@ -16,6 +16,18 @@ source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
 all_transactions <- readInTransactions("transactions.csv")
 timeline_items <- readxl::read_excel('timeline.xlsx',sheet = 'cal')
 
+# isRegularBill <- function(place){
+#   s = c()
+#   com = data.frame(all_transactions %>% filter(description == place))
+#   for (i in 2:nrow(com)){
+#     s <- c(s,interval(ymd(com[i,"posting_date"]),ymd(com[i-1,"posting_date"])) %/% days(1))
+#   }
+#   return(sd(s)**2)
+# }
+# 
+# df <- all_transactions %>% group_by(description) %>% summarise(n = isRegularBill(description))
+
+
 server <- function(session,input, output) {
   
   
@@ -43,7 +55,7 @@ server <- function(session,input, output) {
   })
   
   aggregateDebitByMonth <- reactive({
-    df = allDebitTransactions() %>% 
+    df = getFilteredData() %>% 
       group_by(
         desc = `description`, 
         month = paste0(floor_date(`posting_date`,"month"))
@@ -56,10 +68,12 @@ server <- function(session,input, output) {
   #------------------------Update places Buttons------------------------
   
   observeEvent(input$groc_only, {
-    updateSelectInput(session, "places",selected = c("Hy-Vee","Costco","Trader Joe's"))
+    updateSelectInput(session, "category",selected = c('Groceries'))
+    updateSelectInput(session, "places",choices = c("Hy-Vee","Costco","Trader Joe's"),selected = c("Hy-Vee","Costco","Trader Joe's"))
   })
   
   observeEvent(input$amaz_only, {
+    updateSelectInput(session, "category",selected = c('Retail'))
     updateSelectInput(session, "places",selected = c('Amazon'),choices = c('Amazon'))
   })
   
@@ -87,7 +101,18 @@ server <- function(session,input, output) {
       choices = unique(allTranactions()$transaction_cat),
       multiple = TRUE, 
       options = list(`actions-box` = TRUE),
-      selected = c("Groceries"),
+      # selected = c("Groceries"),
+    )
+  })
+  
+  output$places = renderUI({
+    df <- allTranactions() %>% filter(transaction_cat %in% input$category)
+    selectInput(
+      "places", 
+      "Places:", 
+      choices = unique(df$description),
+      selected = unique(df$description),
+      multiple = TRUE
     )
   })
   
@@ -100,18 +125,6 @@ server <- function(session,input, output) {
       value=c(1,5000),
       step = NULL,
       round = TRUE
-    )
-  })
-  
-  output$places = renderUI({
-    df <- allTranactions() %>% filter(transaction_cat %in% input$category)
-    # updateSelectInput(session, "places",selected = unique(df$description))
-    selectInput(
-      "places", 
-      "Places:", 
-      choices = unique(df$description),
-      selected = unique(df$description),
-      multiple = TRUE
     )
   })
   
@@ -150,6 +163,24 @@ server <- function(session,input, output) {
              ),
              barmode = 'stack')
     return(p)
+  })
+  
+  output$monthly_summary_by_month <- DT::renderDataTable({
+    shiny::validate(need(!is.na(aggregateDebitByMonth())," "))
+    DT::datatable(
+      aggregateDebitByMonth() %>% 
+        group_by(month) %>% summarise(ta = sum(amount)) %>% 
+        mutate(month_label = paste0(month(month,abbr = T,label = T)," ",year(month))) %>% 
+        select("Month" = month_label,
+               "Hidden Date" = month,
+               "Total ($)" = ta),
+      rownames = FALSE,
+      options = list(pageLength = 50,
+                     dom = 't',
+                     order = list(list(1, 'desc')),
+                     columnDefs = list(list(visible=FALSE, targets=c(1)))
+      )
+    )   
   })
   
   output$monthly_summary_list <- DT::renderDataTable({
@@ -196,6 +227,8 @@ server <- function(session,input, output) {
        x = ~`posting_date`, 
        y = ~`amount`, 
        color = ~`description`,
+      textposition = "auto",
+       hovertemplate = paste(df$description,'($%{y})<br>%{x}'),
        colors = brewer.pal(length(names(table(df$description))),"Paired")
     ) %>% 
       layout(yaxis = list(title = 'Amount ($)'), 
