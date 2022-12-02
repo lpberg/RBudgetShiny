@@ -19,7 +19,9 @@ readInTransactions <- function(fileName){
     all_transactions$month_year <- paste0(month(all_transactions$posting_date,abbr = T,label = T), " ",
                                           year(all_transactions$posting_date)
                                     )
-    all_transactions[!duplicated(all_transactions), ]
+    print(nrow(all_transactions))
+    all_transactions <- unique(all_transactions)
+    print(nrow(all_transactions))
     return(all_transactions)
 }
 # Date	Account	Description	Category	Tags	Amount
