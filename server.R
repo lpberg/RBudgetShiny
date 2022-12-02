@@ -46,8 +46,7 @@ server <- function(session,input, output) {
         desc = `description`,
         month = paste0(floor_date(`posting_date`,"month"))
       ) %>%
-      summarize(amount = sum(`amount`),n=n(),
-      )
+      summarize(amount = sum(`amount`),n=n())
     return(df)
   })
     
@@ -75,7 +74,7 @@ server <- function(session,input, output) {
       "Accounts:", 
       unique(all_transactions$account_name),
       multiple = TRUE, 
-      selected = c("JOINT WROS"),
+      selected = c("Visa Signature Rewards - Ending in 2163"),
       options = list(`actions-box` = TRUE)
     )
   })
