@@ -1,24 +1,26 @@
 readInTransactions <- function(fileName){
     all_transactions <- read_csv(fileName)
-    all_transactions$Date <- mdy(all_transactions$Date)
-    all_transactions$`Account Name` <- as.character(all_transactions$`Account Name`)
-    all_transactions <- rename(all_transactions, 
-      `posting_date` = `Date`,
+    all_transactions$posting_date <- lubridate::mdy(all_transactions$posting_date)
+    all_transactions$Account <- as.character(all_transactions$Account)
+    all_transactions$Amount <- abs(all_transactions$Amount)
+    print(str(all_transactions))
+    all_transactions <- dplyr::rename(all_transactions, 
+      # posting_date = Date,
       `description` = `Description`,
-      `orig_description` = `Original Description`,
+      # `orig_description` = `Description`,
       `amount` = `Amount`,
-      `transaction_type` = `Transaction Type`,
-      `account_name` = `Account Name`,
+      # `transaction_type` = `charge`,
+      `account_name` = `Account`,
       `transaction_cat` = `Category`)
     all_transactions <- all_transactions %>% 
-      filter(account_name %in% c("JOINT WROS","Fidelity Rewards Visa Signature"))
+      filter(account_name %in% c("JOINT WROS","Visa Signature Rewards - Ending in 2163"))
     
-    all_transactions$month_year <- paste0(month(all_transactions$posting_date,abbr = T,label = T),
-                                          " ",
+    all_transactions$month_year <- paste0(month(all_transactions$posting_date,abbr = T,label = T), " ",
                                           year(all_transactions$posting_date)
                                     )
     return(all_transactions)
 }
+# Date	Account	Description	Category	Tags	Amount
 
 sankeyByDesc <- function(all_trans,cats){
   all_trans <- all_trans %>% filter(transaction_type == "debit") %>% filter_("transaction_cat!=description")
