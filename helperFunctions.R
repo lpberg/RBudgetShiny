@@ -1,7 +1,7 @@
 readInTransactions <- function(fileName){
     all_transactions <- read_csv(fileName)
     # all_transactions <- dplyr::rename(all_transactions,posting_date = 1)
-    all_transactions$posting_date <- lubridate::mdy(all_transactions$posting_date)
+    all_transactions$posting_date <- lubridate::ymd(all_transactions$posting_date)
     all_transactions$Account <- as.character(all_transactions$Account)
     all_transactions$Amount <- abs(all_transactions$Amount)
     print(str(all_transactions))

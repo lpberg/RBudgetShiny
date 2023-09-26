@@ -18,9 +18,12 @@ ui <- dashboardPage(
                 ),
                 column(width = 4,
                     uiOutput("category"),
-                #     actionButton("groc_only", "Groceries (top 3)"),
-                #     actionButton("util_only", "Utilities"),
-                #     actionButton("amaz_only", "Amazon")
+                    actionButton("groc_only", "Groceries (top 3)"),
+                    actionButton("util_only", "Utilities"),
+                    actionButton("retail_only", "Retail"),
+                    actionButton("restaurants_only","Restaurants"),
+                    actionButton("streaming_only","Streaming Services"),
+                    actionButton("clear_places","Clear")
                 ),
                 column(width = 4,
                     uiOutput("places")
@@ -32,7 +35,7 @@ ui <- dashboardPage(
                 tabsetPanel(
                     type="tabs",
                     tabPanel(
-                        "Debit: Monthly Summary",
+                        "Monthly Summary",
                         plotlyOutput("monthly_summary"),
                         column(
                             width = 6,
@@ -48,7 +51,7 @@ ui <- dashboardPage(
                         )
                     ),
                     tabPanel(
-                        "Debit: Transactions",
+                        "Individual Transactions",
                         tags$h4("Transactions Over Time"),
                         plotlyOutput("transaction_scatter"),
                         column(
@@ -58,7 +61,7 @@ ui <- dashboardPage(
                         )
                     ),
                     tabPanel(
-                        "Credit: Transactions",
+                        "Credit Transactions",
                         plotlyOutput("credit_transaction_scatter"),
                         DTOutput("credit_transaction_list")
                     )

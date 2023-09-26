@@ -2,11 +2,11 @@ library(tidyverse)
 library(dplyr)
 library(shiny)
 library(DT)
-library(plotly)
 library(lubridate)
 library(shinydashboard)
 library(shinyWidgets)
 library(RColorBrewer)
+library(plotly)
 
 source(file.path('helperFunctions.R', fsep = .Platform$file.sep))
 
@@ -51,20 +51,37 @@ server <- function(session,input, output) {
   })
     
   #------------------------Update places Buttons------------------------
-  
-  # observeEvent(input$groc_only, {
-  #   updateSelectInput(session, "category",selected = c('Groceries'))
-  #   updateSelectInput(session, "places",choices = c("Hy-Vee","Costco","Trader Joe's"),selected = c("Hy-Vee","Costco","Trader Joe's"))
-  # })
+  grocceries <- c("Walmart","Costco","Target")
+  observeEvent(input$groc_only, {
+    # updateSelectInput(session, "category",selected = c('Groceries'))
+    updateSelectInput(session, "places",choices = grocceries,selected = grocceries)
+  })
   # 
-  # observeEvent(input$amaz_only, {
-  #   updateSelectInput(session, "category",selected = c('Retail'))
-  #   updateSelectInput(session, "places",selected = c('Amazon'),choices = c('Amazon'))
-  # })
+  retail <- c('Amazon','Target')
+  observeEvent(input$retail_only, {
+    updateSelectInput(session, "category",selected = c('Retail'))
+    updateSelectInput(session, "places",selected = retail,choices = retail)
+  })
   # 
-  # observeEvent(input$util_only, {
-  #   updateSelectInput(session, "category",selected = c('Utilities'))
-  # })
+  utilities <- c('Tennis Sanitation','City of Woodbury',"Comcast")
+  observeEvent(input$util_only, {
+    updateSelectInput(session, "places",selected = utilities,choices = utilities)
+  })
+  # 
+  streaming_services <- c('Youtube Tv','Youtube Premium',"Netflix",'Hulu','Disney Plus','Apple')
+  observeEvent(input$streaming_only, {
+    updateSelectInput(session, "places",selected = streaming_services,choices = streaming_services)
+  })
+  #
+  observeEvent(input$restaurants_only, {
+    updateSelectInput(session, "category",selected = "")
+    updateSelectInput(session, "category",selected = c('Restaurants'))
+  })
+  #
+  observeEvent(input$clear_places, {
+    updateSelectInput(session, "places",selected = "")
+    #updateSelectInput(session, "category",selected = c('Restaurants'))
+  })
   
   #------------------------Filters------------------------
   
