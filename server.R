@@ -29,6 +29,7 @@ server <- function(session,input, output) {
       filter(`amount` >= input$valRange[1]) %>% 
       filter(`amount` <= input$valRange[2]) %>% 
       filter(`description` %in% input$places)
+    filtered_df <- filtered_df[!duplicated(filtered_df), ]
     return(filtered_df)
   })
   
