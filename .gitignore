@@ -1,6 +1,6 @@
 dictionary.xls
 ExportedTransactions.xls
 transactions.csv
-transactions_old.csv
+*.csv
 timeline.xlsx
-
+*.bak
