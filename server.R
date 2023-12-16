@@ -92,7 +92,7 @@ server <- function(session,input, output) {
       "Accounts:", 
       unique(all_transactions$account_name),
       multiple = TRUE, 
-      selected = c("Visa Signature Rewards - Ending in 2163"),
+      selected = unique(all_transactions$account_name),
       options = list(`actions-box` = TRUE)
     )
   })

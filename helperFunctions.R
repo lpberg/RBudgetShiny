@@ -13,8 +13,8 @@ readInTransactions <- function(fileName){
       # `transaction_type` = `charge`,
       `account_name` = `Account`,
       `transaction_cat` = `Category`)
-    all_transactions <- all_transactions %>% 
-      filter(account_name %in% c("Visa Signature Rewards - Ending in 2163"))
+    #all_transactions <- all_transactions %>% 
+      #filter(account_name %in% c("Visa Signature Rewards - Ending in 2163"))
     
     all_transactions$month_year <- paste0(month(all_transactions$posting_date,abbr = T,label = T), " ",
                                           year(all_transactions$posting_date)
